@@ -4,7 +4,7 @@
 #include "globals.hpp"
 #include "netmgr.hpp"
 
-BEGIN_NAMESPACE
+BEGIN_MEATBALL_NAMESPC
 
 class GameServer
 {
@@ -19,6 +19,6 @@ private:
     NetMgr mNetMgr;
 };
 
-END_NAMESPACE
+END_MEATBALL_NAMESPC
 
 #endif

@@ -1,15 +1,23 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 2.8)
 project(server)
 
 set(CMAKE_CXX_STANDARD 11)
 
+# 添加 c++11 编译选项
+if(CMAKE_COMPILER_IS_GNUCXX)
+    add_compile_options(-std=c++11)
+    message(STATUS "optional:-std=c++11")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 set(SOURCE_FILES main.cpp frame/gamesvr.cpp frame/netmgr.cpp)
 
-include_directories(./)
-include_directories(./deps/libuv/include)
+include_directories(${PROJECT_SOURCE_DIR})
+# INCLUDE PATH
+include_directories(${PROJECT_SOURCE_DIR}/deps/libuv/include)
 
-link_directories(LIBUV ./deps/libuv/lib)
+# LIBORARY
+link_directories(${PROJECT_SOURCE_DIR}/deps/libuv/lib)
 
-link_libraries(uv pthread)
+link_libraries(uv pthread rt)
 
 add_executable(server ${SOURCE_FILES})
