@@ -12,6 +12,8 @@ uv_tcp_t            NetMgr::mTCPHandle;
 uv_getaddrinfo_t    NetMgr::mUVAddrInfo;
 struct addrinfo     NetMgr::mAddrInfo;
 
+
+
 // ==============================
 //
 // ==============================
@@ -83,22 +85,16 @@ void NetMgr::OnBind(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs)
 {
     char                addrbuf[64];
     unsigned int        ipv4_naddrs = 0;
-    struct sockaddr_in  addr4;
-    struct sockaddr     addr;
-    const void          *addrv;
+    NetAddr             netAddr;
     int32_t             num = 0;
     int32_t             err = 0;
 
-    printf("OnBind\n");
-
     if (status < 0)
     {
-        printf("getaddrinfo(\"%s\"): %s", "192.168.122.1", uv_strerror(status));
+        printf("getaddrinfo(\"%s\"): %s", mIP.c_str(), uv_strerror(status));
         uv_freeaddrinfo(addrs);
         return;
     }
-
-    printf("run bind list\n");
 
     for (struct addrinfo* ai = addrs; ai != NULL; ai = ai->ai_next)
     {
@@ -119,20 +115,26 @@ void NetMgr::OnBind(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs)
         if (ai->ai_family != AF_INET)
             continue;
 
-        addr4 = *(const struct sockaddr_in *) ai->ai_addr;
-        addr4.sin_port = htons(mPort);
-        addrv = &addr4.sin_addr;
+        netAddr.addr4 = *(const struct sockaddr_in *) ai->ai_addr;
+        netAddr.addr4.sin_port = htons(mPort);
 
-        uv_inet_ntop(addr.sa_family, addrv, addrbuf, sizeof(addrbuf));
-        err = uv_tcp_init(mUVLoop, &mTCPHandle);
+        uv_inet_ntop(netAddr.addr.sa_family, &netAddr.addr4, addrbuf, sizeof(addrbuf));
+
+        err = uv_tcp_init(mUVLoop, &mServers[num].tcp_handle);
+
+        err = uv_tcp_bind(&mServers[num].tcp_handle, &netAddr.addr, 0);
+        std::string errStr = uv_strerror(err);
+
         if (0 == err)
         {
-            err = uv_listen((uv_stream_t*)&mTCPHandle, 128, OnConn);
+            err = uv_listen((uv_stream_t*)&mServers[num].tcp_handle, 128, OnConn);
         }
 
         if (0 != err)
         {
             printf("(\"%s:%hu\"): %s", addrbuf, mPort, uv_strerror(err));
+            exit(0);
+            break;
 
             while (num > 0)
             {
@@ -157,18 +159,95 @@ void NetMgr::OnConn(uv_stream_t* server, int status)
     ServerCtx*  sx = NULL;
     ClientCtx*  cx = NULL;
 
-    printf("OnConn %d", status);
+    printf("OnConn %d\n", status);
 
     sx = GET_FIELD(server, ServerCtx, tcp_handle);
     cx = (ClientCtx*)malloc(sizeof(*cx));
 
     err = uv_tcp_init(mUVLoop, &cx->incoming.handle.tcp);
-    printf("uv_tcp_init: %d", err);
+    printf("uv_tcp_init: %d\n", err);
 
     err = uv_accept(server, &cx->incoming.handle.stream);
-    printf("uv_accept: %d", err);
+    printf("uv_accept: %d\n", err);
 
-    //client_finish_init(sx, cx);
+    ClientFinishInit(sx, cx);
+}
+
+void NetMgr::ClientFinishInit(ServerCtx *sx, ClientCtx *cx)
+{
+    NetConn *incoming;
+    NetConn *outgoing;
+
+    cx->sx = sx;
+    //s5_init(&cx->parser);
+
+    incoming = &cx->incoming;
+    incoming->client = cx;
+    incoming->result = 0;
+    incoming->rdstate = c_stop;
+    incoming->wrstate = c_stop;
+    //incoming->idle_timeout = sx->idle_timeout;
+    uv_timer_init(mUVLoop, &incoming->timer_handle);
+
+    outgoing = &cx->outgoing;
+    outgoing->client = cx;
+    outgoing->result = 0;
+    outgoing->rdstate = c_stop;
+    outgoing->wrstate = c_stop;
+    //outgoing->idle_timeout = sx->idle_timeout;
+    uv_tcp_init(mUVLoop, &outgoing->handle.tcp);
+    uv_timer_init(mUVLoop, &outgoing->timer_handle);
+
+    // Wait for the initial packet
+    ConnRead(incoming);
+}
+
+void NetMgr::ConnRead(NetConn* c)
+{
+    uv_read_start(&c->handle.stream, ConnAlloc, ConnReadDone);
+    c->rdstate = c_busy;
+}
+
+void NetMgr::ConnTimerReset(NetConn* c)
+{
+    //uv_timer_start(&c->timer_handle, conn_timer_expire, c->idle_timeout, 0);
+}
+
+void NetMgr::ConnAlloc(uv_handle_t* handle, size_t size, uv_buf_t* buf)
+{
+    NetConn *c = NULL;
+
+    c = GET_FIELD(handle, NetConn, handle);
+    //ASSERT(c->rdstate == c_busy);
+    buf->base = c->t.buf;
+    buf->len = sizeof(c->t.buf);
+}
+
+void NetMgr::ConnReadDone(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
+{
+    NetConn *c = NULL;
+
+    c = GET_FIELD(handle, NetConn, handle);
+    //ASSERT(c->t.buf == buf->base);
+    //ASSERT(c->rdstate == c_busy);
+    c->rdstate = c_done;
+    c->result = nread;
+
+    uv_read_stop(&c->handle.stream);
+
+    if (0 == nread)
+    {
+        printf("net closed\n");
+    }
+
+    if (nread > 0)
+    {
+        c->t.buf[nread] = '\0';
+        printf("read: %s\n", c->t.buf);
+    }
+
+    //do_next(c->client);
+    ConnRead(c);
 }
 
 END_MEATBALL_NAMESPC

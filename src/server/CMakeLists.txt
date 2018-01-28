@@ -18,6 +18,10 @@ include_directories(${PROJECT_SOURCE_DIR}/deps/libuv/include)
 # LIBORARY
 link_directories(${PROJECT_SOURCE_DIR}/deps/libuv/lib)
 
-link_libraries(uv pthread rt)
+IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    link_libraries(uv pthread rt)
+ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    link_libraries(libuvd iphlpapi psapi ws2_32 userenv)
+ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 add_executable(server ${SOURCE_FILES})

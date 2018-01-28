@@ -29,15 +29,11 @@ int32_t GameServer::Init()
     if (0 != ret)
         return ret;
 
-    printf("what tom\n");
-
     if (0 != ret)
     {
         printf("getaddrinfo: '%s'", uv_strerror(ret));
         return ret;
     }
-
-    printf("wocao\n");
 
     return ret;
 }
