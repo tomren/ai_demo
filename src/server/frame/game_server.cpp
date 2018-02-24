@@ -1,9 +1,16 @@
 #include "game_server.hpp"
+#include "net/net_manager.hpp"
+#include "game_logic.hpp"
 
 BEGIN_MEATBALL_NAMESPC
 
 // ==============================
-// ¹¹Ôìº¯Êý
+// 
+// ==============================
+uv_loop_t* GameServer::mUVLoop;
+
+// ==============================
+// æž„é€ å‡½æ•°
 // ==============================
 GameServer::GameServer()
 {
@@ -11,29 +18,36 @@ GameServer::GameServer()
 }
 
 // ==============================
-// Îö¹¹º¯Êý
+// æžæž„å‡½æ•°
 // ==============================
 GameServer::~GameServer()
 {
 
 }
 
-
 // ==============================
-// ³õÊ¼»¯
+// åˆå§‹åŒ–
 // ==============================
 int32_t GameServer::Init()
 {
     printf("enter Init()\n");
-    int32_t ret = mNetMgr.Listen("0.0.0.0", 60000);
-    if (0 != ret)
-        return ret;
 
+    NetManager::CreateInstance();
+    GameLogic::CreateInstance();
+
+    mUVLoop = uv_default_loop();
+
+    uv_timer_init(mUVLoop, &mUVTimer);
+    uv_timer_start(&mUVTimer, Update, 0, 100);
+
+    int32_t ret = NetManager::Instance()->Listen("0.0.0.0", 60000);
     if (0 != ret)
     {
         printf("getaddrinfo: '%s'", uv_strerror(ret));
-        return ret;
     }
+
+    uv_loop_delete(mUVLoop);
+    mUVLoop = NULL;
 
     return ret;
 }
@@ -41,9 +55,10 @@ int32_t GameServer::Init()
 // ==============================
 //
 // ==============================
-int32_t GameServer::Run()
+void GameServer::Update(uv_timer_t* handle)
 {
-    return 0;
+    NetManager::Instance()->Update();
+    GameLogic::Instance()->Update();
 }
 
 END_MEATBALL_NAMESPC

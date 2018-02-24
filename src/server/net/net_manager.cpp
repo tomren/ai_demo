@@ -1,13 +1,13 @@
 #include "net_manager.hpp"
 #include "net_client.hpp"
 #include "net_server.hpp"
+#include "frame/game_server.hpp"
 #include <memory.h>
 
 BEGIN_MEATBALL_NAMESPC
 
 std::string         NetManager::mIP;
 uint32_t            NetManager::mPort;
-uv_loop_t*          NetManager::mUVLoop;
 NetServer*          NetManager::mServers;
 // --------------------------------------------------
 uv_tcp_t            NetManager::mTCPHandle;
@@ -41,7 +41,6 @@ int32_t NetManager::Listen(const char* ip, uint32_t port)
 
     mIP     = ip;
     mPort   = port;
-    mUVLoop = uv_default_loop();
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family     = AF_UNSPEC;
@@ -49,7 +48,7 @@ int32_t NetManager::Listen(const char* ip, uint32_t port)
     hints.ai_protocol   = IPPROTO_TCP;
 
     printf("begin uv_getaddrinfon\n");
-    err = uv_getaddrinfo(mUVLoop, &mUVAddrInfo, OnBind, ip, NULL, &hints);
+    err = uv_getaddrinfo(GameServer::GetUVLoop(), &mUVAddrInfo, OnBind, ip, NULL, &hints);
     if (0 != err)
     {
         printf("getaddrinfo: '%s'\n", uv_strerror(err));
@@ -58,7 +57,7 @@ int32_t NetManager::Listen(const char* ip, uint32_t port)
     printf("end uv_getaddrinfon\n");
 
     printf("begin uv_run\n");
-    if (uv_run(mUVLoop, UV_RUN_DEFAULT))
+    if (uv_run(GameServer::GetUVLoop(), UV_RUN_DEFAULT))
     {
         //abort();
     }
@@ -66,8 +65,6 @@ int32_t NetManager::Listen(const char* ip, uint32_t port)
 
     printf("hahahaha\n");
 
-    uv_loop_delete(mUVLoop);
-    mUVLoop = NULL;
     return err;
 }
 
@@ -121,7 +118,7 @@ void NetManager::OnBind(uv_getaddrinfo_t *req, int status, struct addrinfo *addr
 
         uv_inet_ntop(netAddr.addr.sa_family, &netAddr.addr4, addrbuf, sizeof(addrbuf));
 
-        err = uv_tcp_init(mUVLoop, &mServers[num].mNetHandle.tcp);
+        err = uv_tcp_init(GameServer::GetUVLoop(), &mServers[num].mNetHandle.tcp);
 
         err = uv_tcp_bind(&mServers[num].mNetHandle.tcp, &netAddr.addr, 0);
         std::string errStr = uv_strerror(err);
@@ -164,7 +161,7 @@ void NetManager::OnConn(uv_stream_t* server, int status)
     mNetMap[netCli->mNetID] = netCli;
 
     //err = uv_tcp_init(mUVLoop, &cx->incoming.handle.tcp);
-    int32_t err = uv_tcp_init(mUVLoop, &netCli->mNetHandle.tcp);
+    int32_t err = uv_tcp_init(GameServer::GetUVLoop(), &netCli->mNetHandle.tcp);
     printf("uv_tcp_init: %d\n", err);
 
     //err = uv_accept(server, &cx->incoming.handle.stream);
@@ -174,7 +171,7 @@ void NetManager::OnConn(uv_stream_t* server, int status)
     uv_read_start(&netCli->mNetHandle.stream, NetConnect::AllocRecvBuf, NetConnect::OnRecvBuf);
     //ClientFinishInit(sx, cx);
 
-    uv_timer_init(mUVLoop, &netCli->mTimerHandle);
+    uv_timer_init(GameServer::GetUVLoop(), &netCli->mTimerHandle);
 }
 
 void NetManager::OnDisConnect(NetConnect* netConn)

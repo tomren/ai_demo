@@ -2,7 +2,7 @@
 #define GAMESVR_H
 
 #include "globals.hpp"
-#include "net_manager.hpp"
+#include "uv.h"
 
 BEGIN_MEATBALL_NAMESPC
 
@@ -13,10 +13,13 @@ public:
     ~GameServer();
 
     int32_t Init();
-    int32_t Run();
+    static void Update(uv_timer_t* handle);
+
+    static uv_loop_t* GetUVLoop() { return mUVLoop; }
 
 private:
-    NetManager mNetMgr;
+    static uv_loop_t*       mUVLoop;
+    uv_timer_t              mUVTimer;
 };
 
 END_MEATBALL_NAMESPC

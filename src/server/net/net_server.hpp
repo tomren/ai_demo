@@ -14,6 +14,8 @@ public:
     NetServer();
     virtual ~NetServer();
 
+    int32_t Update();
+
 private:
     
 };

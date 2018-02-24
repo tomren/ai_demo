@@ -9,15 +9,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "optional:-std=c++11")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-set(SOURCE_FILES 
-                main.cpp globals.hpp 
-                frame/game_server.hpp frame/game_server.cpp 
-                frame/net_connect.hpp frame/net_connect.cpp 
-                frame/net_client.hpp frame/net_client.cpp frame/net_server.hpp frame/net_server.cpp 
-                frame/net_manager.hpp frame/net_manager.cpp)
-
-include_directories(${PROJECT_SOURCE_DIR})
 # INCLUDE PATH
+include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/deps/libuv/include)
 include_directories(${PROJECT_SOURCE_DIR}/deps/msgpack/include)
 
@@ -31,9 +24,37 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
     link_libraries(msgpack libuvd iphlpapi psapi ws2_32 userenv)
 endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
-file(GLOB FRAME_HPP "${PROJECT_SOURCE_DIR}/frame/*.hpp")
-file(GLOB FRAME_CPP "${PROJECT_SOURCE_DIR}/frame/*.cpp")
+# AI
+# ============================================================
+file(GLOB AI_SRC "${PROJECT_SOURCE_DIR}/ai/*.hpp" "${PROJECT_SOURCE_DIR}/ai/*.cpp")
+file(GLOB AI_BT_SRC "${PROJECT_SOURCE_DIR}/ai/bt/*.hpp" "${PROJECT_SOURCE_DIR}/ai/bt/*.cpp")
+file(GLOB AI_FSM_SRC "${PROJECT_SOURCE_DIR}/ai/fsm/*.hpp" "${PROJECT_SOURCE_DIR}/ai/fsm/*.cpp")
 
-source_group("frame" FILES ${FRAME_HPP} ${FRAME_CPP})
+# UTIL
+# ============================================================
+file(GLOB UTIL_SRC "${PROJECT_SOURCE_DIR}/util/*.hpp" "${PROJECT_SOURCE_DIR}/util/*.cpp")
+
+# NET
+# ============================================================
+file(GLOB NET_SRC "${PROJECT_SOURCE_DIR}/net/*.hpp" "${PROJECT_SOURCE_DIR}/net/*.cpp")
+
+# CREATURE
+# ============================================================
+file(GLOB CREATURE_SRC "${PROJECT_SOURCE_DIR}/creature/*.hpp" "${PROJECT_SOURCE_DIR}/creature/*.cpp")
+
+# FRAME
+# ============================================================
+file(GLOB FRAME_SRC "${PROJECT_SOURCE_DIR}/frame/*.hpp" "${PROJECT_SOURCE_DIR}/frame/*.cpp")
+
+set(SOURCE_FILES main.cpp globals.hpp 
+                 ${AI_SRC} 
+                 ${AI_BT_SRC} 
+                 ${AI_FSM_SRC} 
+                 ${UTIL_SRC} 
+                 ${NET_SRC} 
+                 ${CREATURE_SRC} 
+                 ${FRAME_SRC} )
+
+source_group("frame" FILES ${FRAME_SRC})
 
 add_executable(server ${SOURCE_FILES})

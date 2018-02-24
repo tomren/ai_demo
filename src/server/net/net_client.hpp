@@ -1,9 +1,9 @@
 #ifndef NET_CLIENT_H
 #define NET_CLIENT_H
 
+#include <string>
 #include "globals.hpp"
 #include "uv.h"
-#include <string>
 #include "net_connect.hpp"
 
 BEGIN_MEATBALL_NAMESPC

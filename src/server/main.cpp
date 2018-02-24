@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 #include "frame/game_server.hpp"
 #include "msgpack.h"
 
@@ -35,7 +36,7 @@ void test()
         if (obj.type == MSGPACK_OBJECT_ARRAY)
         {
             printf("%u\n", obj.via.array.size);
-            printf("%lld\n", obj.via.array.ptr[0].via.i64);
+            printf("%" PRId64 "\n", obj.via.array.ptr[0].via.i64);
             printf("%d\n", (int32_t)obj.via.array.ptr[1].via.boolean);
             char buff[32];
             memcpy(buff, obj.via.array.ptr[2].via.str.ptr, obj.via.array.ptr[2].via.str.size);
@@ -55,6 +56,7 @@ void test()
 int main(int argc, char **argv)
 {
     int32_t ret = 0;
+
     MeatBall::GameServer gameSvr;
 
     test();

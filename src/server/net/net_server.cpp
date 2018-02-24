@@ -19,4 +19,12 @@ NetServer::~NetServer()
 
 }
 
+// ==============================
+// 
+// ==============================
+int32_t NetServer::Update()
+{
+    return 0;
+}
+
 END_MEATBALL_NAMESPC

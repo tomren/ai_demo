@@ -3,6 +3,7 @@
 
 #include "globals.hpp"
 #include "uv.h"
+#include "util/sigletion.hpp"
 #include <string>
 #include <map>
 
@@ -30,7 +31,7 @@ class NetClient;
 // ==============================
 // Õ¯¬Áπ‹¿Ì
 // ==============================
-class NetManager
+class NetManager : public Singleton<NetManager>
 {
 public:
     NetManager();
@@ -49,7 +50,6 @@ private:
 
     static std::string         mIP;
     static uint32_t            mPort;
-    static uv_loop_t*          mUVLoop;
     static NetServer*          mServers;
     // --------------------------------------------------
     static uv_tcp_t            mTCPHandle;
